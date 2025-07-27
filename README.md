@@ -30,32 +30,53 @@ make run
 
 ## Usage
 
+### Interactive TUI (Default)
 ```bash
-# Run the application
-./hab
-
-# Or if installed globally
+# Launch interactive visualization
 hab
+
+# Or explicitly
+hab -i
 ```
 
-**Controls:**
-
-**All Activities View (Default):**
-- `1-9` - Select specific activity by number
-- `Tab` - Switch to single activity view
+**TUI Controls:**
+- `1-9` - Select specific habit by number  
+- `Tab` - Switch between all/single habit view
+- `↑/↓` or `j/k` - Navigate between habits (single view)
+- `a` - Return to all habits view
 - `q`, `ESC`, or `Ctrl+C` - Quit
 
-**Single Activity View:**
-- `↑/↓` or `j/k` - Navigate between activities
-- `a` - Return to all activities view
-- `Tab` - Toggle back to all activities
-- `q`, `ESC`, or `Ctrl+C` - Quit
+### Command Line Interface
+
+**Create habits:**
+```bash
+hab new exercise                    # Create new habit
+hab new exercise --color red        # With specific color
+hab new brushing --target 2         # Multi-frequency habit
+```
+
+**Track habits:**
+```bash
+hab exercise                        # Add entry for today
+hab add exercise 2025-01-15        # Add entry for specific date
+hab exercise --date 2025-01-15     # Alternative syntax
+```
+
+**View and manage:**
+```bash
+hab list                           # List all habits with stats
+hab stats exercise                 # Detailed statistics
+hab delete exercise                # Delete habit (with confirmation)
+hab delete exercise --force        # Delete without confirmation
+```
 
 ### Sample Output
+
+**Interactive TUI:**
 ```
 Activity Tracker - All Activities
 
-[1] Brushing Teeth (128 activities)
+[1] Brushing Teeth (139 activities)
 S  ●  ●  ◑  ●  ●  ●  ◑  
 M  ●  ●  ●  ●  ●  ●  ●  
 T  ●  ●  ●  ●  ●  ●  ●  
@@ -72,9 +93,47 @@ None  ○  ◐  ◑  ●  Complete
 Controls: [1-9] Select habit • [Tab] Single view • [q/ESC] Quit
 ```
 
+**CLI Commands:**
+```bash
+$ hab new exercise --color red
+✓ Created habit 'Exercise' with color red
+Add an entry with: hab exercise
+
+$ hab exercise
+✓ Added entry for 'Exercise' today
+Current streak: 1 days 🔥
+
+$ hab list
+Your Habits:
+============
+
+[1] Exercise (red)
+    Key: exercise
+    Total entries: 1
+    Unique days: 1
+    Target per day: 1
+    Current streak: 1 days 🔥
+    Add entry: hab exercise
+```
+
+## Data Location
+
+By default, habits are stored in platform-appropriate locations:
+
+- **macOS**: `~/Library/Application Support/hab/data/activities.json`
+- **Linux**: `~/.config/hab/data/activities.json`
+- **Windows**: `%APPDATA%/hab/data/activities.json`
+- **Fallback**: `./data/activities.json` (current directory)
+
+**Custom Location**: Set `HAB_DATA_FILE` environment variable to override:
+```bash
+export HAB_DATA_FILE="/path/to/my/habits.json"
+hab
+```
+
 ## Data Structure
 
-Habits are stored in `data/activities.json`:
+Habits are stored in JSON format:
 
 ```json
 {
@@ -105,9 +164,9 @@ Habits are stored in `data/activities.json`:
 - Color field is optional (defaults to green)
 
 ### Adding Your Own Data
-1. Edit `data/activities.json`
-2. Add your habit with dates in `YYYY-MM-DD` format
-3. Optionally specify a color and `target_per_day`
+1. Create habits using `hab new [habit-name]` command
+2. Add entries using `hab [habit-name]` or `hab add [habit-name] [date]`
+3. Or manually edit the activities.json file in your data directory
 4. Run `hab` to see your updated grid
 
 ## Character Visualization
@@ -176,8 +235,16 @@ cd ~/hab && hab
 
 ### Project Structure
 ```
-main.go              # Main application with Bubble Tea TUI
-data/activities.json # Habit data storage  
+main.go              # Application entry point
+cmd/                 # CLI commands (Cobra)
+├── root.go          # Root command and TUI launcher
+├── new.go           # Create new habits
+├── add.go           # Add habit entries
+├── list.go          # List all habits
+├── stats.go         # Habit statistics
+└── delete.go        # Delete habits
+internal/            # Data management
+└── habit.go         # CRUD operations and data path logic
 Makefile            # Build and install targets
 go.mod & go.sum     # Go module dependencies
 ```
@@ -187,8 +254,11 @@ go.mod & go.sum     # Go module dependencies
 # Development
 go run main.go
 
-# Build for production
-go build -o hab main.go
+# Build for production  
+make build
+
+# Test all functionality
+make test
 
 # Clean build artifacts
 make clean
@@ -196,20 +266,22 @@ make clean
 
 ### Tech Stack
 - **Language**: Go 1.21+
+- **CLI Framework**: Cobra for command parsing
 - **TUI Framework**: Bubble Tea (Charm.sh)
 - **Styling**: Lipgloss (Charm.sh)
 - **Data Format**: JSON with standard library parsing
 
 ## Sample Data
 
-The repository includes sample data for five habits:
-- Exercise (red)
-- Reading (blue) 
-- Coding (green)
-- Meditation (magenta)
-- Brushing Teeth (cyan, 2x daily target)
+The application starts with no habits. Create your first habit with:
+```bash
+hab new exercise --color red
+```
 
-You can modify `data/activities.json` to track your own habits.
+Then start tracking:
+```bash
+hab exercise  # Add entry for today
+```
 
 ## Contributing
 
