@@ -1,61 +1,80 @@
-# GitHub Activity Tracker
+# hab - Habit Tracker
 
-A terminal-based activity tracker that visualizes your daily activities using GitHub-style contribution grids with ASCII blocks and colors.
+A fast, terminal-based habit tracker with GitHub-style contribution grids, built with Go and the Charm.sh TUI library suite.
 
-![Terminal Activity Tracker Demo](https://img.shields.io/badge/terminal-ready-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB) ![Bun](https://img.shields.io/badge/Bun-282a36?style=flat&logo=bun&logoColor=fbf0df)
+![Go](https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white) ![Bubble Tea](https://img.shields.io/badge/Bubble%20Tea-FF69B4?style=flat) ![Terminal](https://img.shields.io/badge/terminal-ready-brightgreen)
 
 ## Features
 
-- 🎯 **GitHub-style contribution grids** with ASCII block visualization
-- 🌈 **Color-coded activities** for easy differentiation
-- 📊 **365-day activity tracking** with day-of-week labels
+- 🎯 **GitHub-style contribution grids** with circle character visualization (○ ◐ ◑ ●)
+- 🌈 **Color-coded habits** for easy differentiation  
+- 📊 **Multi-frequency habit support** with completion percentage tracking
+- 📅 **365-day habit visualization** going backwards from today
 - 📁 **Human-readable JSON format** for easy import/export
-- ⚡ **Fast terminal rendering** using React + Ink
-- 🔄 **Auto-print and exit** - perfect for scripts and quick status checks
+- ⚡ **Fast compiled binary** with no runtime dependencies
+- 🔄 **Cross-platform terminal support** with automatic character fallbacks
+- 🎮 **Interactive navigation** between all habits and individual views
 
 ## Installation
 
-### Prerequisites
-- [Bun](https://bun.sh/) or Node.js 18+
-
-### Clone and Setup
 ```bash
-git clone https://github.com/grovesjosephn/gh-track.git
-cd gh-track
-bun install
+# Build the application
+make build
+
+# Or install to /usr/local/bin
+make install
+
+# Or run directly
+make run
 ```
 
 ## Usage
 
-### Quick Start
 ```bash
-# Run the activity tracker
-bun dev
-# or
-bun start
+# Run the application
+./hab
+
+# Or if installed globally
+hab
 ```
+
+**Controls:**
+
+**All Activities View (Default):**
+- `1-9` - Select specific activity by number
+- `Tab` - Switch to single activity view
+- `q`, `ESC`, or `Ctrl+C` - Quit
+
+**Single Activity View:**
+- `↑/↓` or `j/k` - Navigate between activities
+- `a` - Return to all activities view
+- `Tab` - Toggle back to all activities
+- `q`, `ESC`, or `Ctrl+C` - Quit
 
 ### Sample Output
 ```
 Activity Tracker - All Activities
 
-Exercise (49 activities)
-S  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒░▒ ░▒ ░░▒ ▒▒ ░
-M  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-T  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-W  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-T  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-F  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-S  ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒ ▒▒▒ ▒▒ ▒▒▒ ▒▒
-   Less ▒░▓██ More
+[1] Brushing Teeth (128 activities)
+S  ●  ●  ◑  ●  ●  ●  ◑  
+M  ●  ●  ●  ●  ●  ●  ●  
+T  ●  ●  ●  ●  ●  ●  ●  
+W  ●  ●  ●  ●  ●  ●  ●  
+T  ●  ●  ●  ●  ●  ●  ●  
+F  ●  ●  ●  ●  ●  ●  ●  
+S  ●  ●  ●  ●  ●  ●  ●  
 
-Reading (59 activities)
+None  ○  ◐  ◑  ●  Complete
+
+[2] Exercise (49 activities)
 ...
+
+Controls: [1-9] Select habit • [Tab] Single view • [q/ESC] Quit
 ```
 
-## Data Format
+## Data Structure
 
-Activities are stored in `data/activities.json`:
+Habits are stored in `data/activities.json`:
 
 ```json
 {
@@ -63,16 +82,23 @@ Activities are stored in `data/activities.json`:
     "exercise": {
       "name": "Exercise",
       "color": "red",
-      "dates": ["2025-01-15", "2025-01-16", "2025-01-20"]
+      "dates": ["2025-01-15", "2025-01-20", "2025-01-25"]
     },
-    "reading": {
-      "name": "Reading", 
+    "brushing_teeth": {
+      "name": "Brushing Teeth",
       "color": "blue",
-      "dates": ["2025-01-15", "2025-01-17", "2025-01-18"]
+      "target_per_day": 2,
+      "dates": [
+        "2025-01-15", "2025-01-15",
+        "2025-01-16", 
+        "2025-01-17", "2025-01-17"
+      ]
     }
   }
 }
 ```
+
+**Multi-completion Habits**: For habits that should be done multiple times per day (like brushing teeth twice daily), set `target_per_day` and repeat the date in the array for each completion.
 
 ### Supported Colors
 - `red`, `blue`, `green`, `magenta`, `cyan`, `yellow`
@@ -80,76 +106,110 @@ Activities are stored in `data/activities.json`:
 
 ### Adding Your Own Data
 1. Edit `data/activities.json`
-2. Add your activity with dates in `YYYY-MM-DD` format
-3. Optionally specify a color
-4. Run `bun dev` to see your updated grid
+2. Add your habit with dates in `YYYY-MM-DD` format
+3. Optionally specify a color and `target_per_day`
+4. Run `hab` to see your updated grid
 
-## ASCII Visualization
+## Character Visualization
 
-Activities are represented using ASCII blocks with different intensities:
-- `▒` - No activity (gray)
-- `░` - Low activity  
-- `▓` - Medium activity
-- `█` - High activity
+The application automatically detects your terminal's rendering capabilities and uses appropriate characters:
+
+### Unicode Mode (Modern terminals)
+- `○` - No activity (0% complete)
+- `◐` - Low completion (< 50% of target)
+- `◑` - Partial completion (50-99% of target) 
+- `●` - Target met or exceeded (100%+)
+
+### ASCII-Extended Mode (Most terminals)  
+- `░` - No activity (0% complete)
+- `▒` - Low completion (< 50% of target)
+- `▓` - Partial completion (50-99% of target)
+- `█` - Target met or exceeded (100%+)
+
+### ASCII Mode (Basic terminals)
+- `.` - No activity (0% complete)
+- `-` - Low completion (< 50% of target)
+- `+` - Partial completion (50-99% of target)
+- `#` - Target met or exceeded (100%+)
 
 Each activity type uses its specified color (red, blue, green, magenta, etc.)
+
+### Manual Override
+You can force a specific rendering mode:
+```bash
+# Force Unicode characters
+HAB_RENDERING=unicode hab
+
+# Force ASCII-Extended characters  
+HAB_RENDERING=extended hab
+
+# Force basic ASCII characters
+HAB_RENDERING=ascii hab
+```
+
+### Debug Mode
+See which rendering mode was auto-detected:
+```bash
+HAB_DEBUG=true hab
+```
 
 ## Use Cases
 
 ### Quick Status Check
 ```bash
-bun dev
+hab
 ```
 
 ### Save to File
 ```bash
-bun dev > activity-report.txt
-```
-
-### Filter Specific Activities
-```bash
-bun dev | grep "Exercise"
+hab > habit-report.txt
 ```
 
 ### Integrate into Scripts
 ```bash
 #!/bin/bash
-echo "=== Daily Activity Report ==="
-cd ~/gh-track && bun dev
+echo "=== Daily Habit Report ==="
+cd ~/hab && hab
 ```
 
 ## Development
 
 ### Project Structure
 ```
-src/
-├── components/
-│   ├── ContributionsGrid.tsx    # Main grid visualization
-│   └── ActivitySelector.tsx     # Activity selection UI
-├── utils/
-│   ├── dateUtils.ts            # Date manipulation helpers
-│   └── dataLoader.ts           # JSON data processing
-├── App.tsx                     # Main application
-└── main.tsx                    # Entry point
+main.go              # Main application with Bubble Tea TUI
+data/activities.json # Habit data storage  
+Makefile            # Build and install targets
+go.mod & go.sum     # Go module dependencies
 ```
 
 ### Commands
 ```bash
 # Development
-bun dev
+go run main.go
 
-# Build
-bun run build
+# Build for production
+go build -o hab main.go
 
-# Lint
-bun run lint
+# Clean build artifacts
+make clean
 ```
 
 ### Tech Stack
-- **Runtime**: Bun
-- **UI Framework**: React 19 + Ink (terminal renderer)
-- **Language**: TypeScript
-- **Linting**: ESLint
+- **Language**: Go 1.21+
+- **TUI Framework**: Bubble Tea (Charm.sh)
+- **Styling**: Lipgloss (Charm.sh)
+- **Data Format**: JSON with standard library parsing
+
+## Sample Data
+
+The repository includes sample data for five habits:
+- Exercise (red)
+- Reading (blue) 
+- Coding (green)
+- Meditation (magenta)
+- Brushing Teeth (cyan, 2x daily target)
+
+You can modify `data/activities.json` to track your own habits.
 
 ## Contributing
 
@@ -166,4 +226,4 @@ MIT License - feel free to use this project however you'd like!
 
 ## Inspiration
 
-Inspired by GitHub's contribution graph, this project brings that familiar visualization to the terminal for tracking any type of daily activities.
+Inspired by GitHub's contribution graph, this project brings that familiar visualization to the terminal for tracking daily habits, with multi-frequency support and blazing fast Go performance.
