@@ -9,7 +9,7 @@ A fast, terminal-based habit tracker with GitHub-style contribution grids, built
 - 🎯 **GitHub-style contribution grids** with circle character visualization (○ ◐ ◑ ●)
 - 🌈 **Color-coded habits** for easy differentiation  
 - 📊 **Multi-frequency habit support** with completion percentage tracking
-- 📅 **365-day habit visualization** going backwards from today
+- 📅 **Flexible timeline visualization** (3, 6, or 12 months) going backwards from today
 - 📁 **Human-readable JSON format** for easy import/export
 - ⚡ **Fast compiled binary** with no runtime dependencies
 - 🔄 **Cross-platform terminal support** with automatic character fallbacks
@@ -32,8 +32,14 @@ make run
 
 ### Interactive TUI (Default)
 ```bash
-# Launch interactive visualization
+# Launch interactive visualization (default: 12 months)
 hab
+
+# Launch with specific timeline
+hab -t 3m              # 3 months
+hab -t 6m              # 6 months  
+hab -t 12m             # 12 months (default)
+hab --no-legend        # Hide legend
 
 # Or explicitly
 hab -i
@@ -44,6 +50,8 @@ hab -i
 - `Tab` - Switch between all/single habit view
 - `↑/↓` or `j/k` - Navigate between habits (single view)
 - `a` - Return to all habits view
+- `Ctrl+3/6/Y` - Switch timeline (3 months, 6 months, 12 months)
+- `L` - Toggle legend visibility
 - `q`, `ESC`, or `Ctrl+C` - Quit
 
 ### Command Line Interface
@@ -74,7 +82,7 @@ hab delete exercise --force        # Delete without confirmation
 
 **Interactive TUI:**
 ```
-Activity Tracker - All Activities
+Activity Tracker - All Activities (12 months)
 
 [1] Brushing Teeth (139 activities)
 S  ●  ●  ◑  ●  ●  ●  ◑  
@@ -85,12 +93,12 @@ T  ●  ●  ●  ●  ●  ●  ●
 F  ●  ●  ●  ●  ●  ●  ●  
 S  ●  ●  ●  ●  ●  ●  ●  
 
-None  ○  ◐  ◑  ●  Complete
-
 [2] Exercise (49 activities)
 ...
 
-Controls: [1-9] Select habit • [Tab] Single view • [q/ESC] Quit
+                             None  ○  ◐  ◑  ●  Complete
+
+Controls: [1-9] Select habit • [Tab] Single view • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit
 ```
 
 **CLI Commands:**

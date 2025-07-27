@@ -80,10 +80,22 @@ type Model struct {
 	viewMode       ViewMode
 	activityKeys   []string
 	selectedIndex  int
+	timeline       TimelineDays
+	showLegend     bool
 }
 
-// NewModel creates a new TUI model
+// NewModel creates a new TUI model with default timeline
 func NewModel() *Model {
+	return NewModelWithOptions(Timeline12Months, true)
+}
+
+// NewModelWithTimeline creates a new TUI model with specified timeline
+func NewModelWithTimeline(timeline TimelineDays) *Model {
+	return NewModelWithOptions(timeline, true)
+}
+
+// NewModelWithOptions creates a new TUI model with specified timeline and legend visibility
+func NewModelWithOptions(timeline TimelineDays, showLegend bool) *Model {
 	hm := internal.NewHabitManager()
 	if err := hm.Load(); err != nil {
 		fmt.Printf("Error loading habits: %v\n", err)
@@ -91,7 +103,7 @@ func NewModel() *Model {
 	}
 
 	activities := hm.GetActivities()
-	grid := generateGrid(activities)
+	grid := generateGrid(activities, timeline)
 	renderingLevel := detectRenderingLevel()
 	
 	// Create sorted activity keys
@@ -110,6 +122,8 @@ func NewModel() *Model {
 		viewMode:       AllActivities,
 		activityKeys:   activityKeys,
 		selectedIndex:  0,
+		timeline:       timeline,
+		showLegend:     showLegend,
 	}
 }
 
@@ -155,13 +169,22 @@ func detectRenderingLevel() RenderingLevel {
 	return ASCII
 }
 
-// Generate a 365-day grid going backwards from current date
-func generateGrid(activities map[string]internal.Activity) [][]ContributionGrid {
+// TimelineDays represents different timeline options
+type TimelineDays int
+
+const (
+	Timeline3Months  TimelineDays = 90
+	Timeline6Months  TimelineDays = 180
+	Timeline12Months TimelineDays = 365
+)
+
+// Generate a grid going backwards from current date with specified timeline
+func generateGrid(activities map[string]internal.Activity, timeline TimelineDays) [][]ContributionGrid {
 	now := time.Now()
 	
-	// Start from today and go back 365 days
+	// Start from today and go back specified number of days
 	endDate := now
-	startDate := endDate.AddDate(0, 0, -364) // 365 days total (including today)
+	startDate := endDate.AddDate(0, 0, -int(timeline-1)) // timeline days total (including today)
 	
 	// Create a map for quick date lookups
 	activityDates := make(map[string]map[string]bool)
@@ -259,6 +282,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIndex = num
 				m.viewMode = SingleActivity
 			}
+		case "ctrl+3", "alt+3":
+			// Switch to 3 month timeline
+			m.timeline = Timeline3Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		case "ctrl+6", "alt+6":
+			// Switch to 6 month timeline
+			m.timeline = Timeline6Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		case "ctrl+y", "alt+y":
+			// Switch to 12 month (year) timeline
+			m.timeline = Timeline12Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		case "l":
+			// Toggle legend visibility
+			m.showLegend = !m.showLegend
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -281,13 +319,23 @@ func (m Model) View() string {
 		Foreground(lipgloss.Color("6")).
 		Margin(1, 0)
 	
-	// Title changes based on view mode
+	// Title changes based on view mode and timeline
+	var timelineText string
+	switch m.timeline {
+	case Timeline3Months:
+		timelineText = "3 months"
+	case Timeline6Months:
+		timelineText = "6 months"
+	case Timeline12Months:
+		timelineText = "12 months"
+	}
+	
 	var titleText string
 	if m.viewMode == AllActivities {
-		titleText = "Activity Tracker - All Activities"
+		titleText = fmt.Sprintf("Activity Tracker - All Activities (%s)", timelineText)
 	} else {
 		selectedActivity := m.activities[m.activityKeys[m.selectedIndex]]
-		titleText = fmt.Sprintf("Activity Tracker - %s", selectedActivity.Name)
+		titleText = fmt.Sprintf("Activity Tracker - %s (%s)", selectedActivity.Name, timelineText)
 	}
 	s.WriteString(titleStyle.Render(titleText))
 	
@@ -328,6 +376,32 @@ func (m Model) View() string {
 		}
 	}
 
+	// Legend (right-aligned to grid end) - only show if enabled
+	if m.showLegend {
+		s.WriteString("\n\n")
+		legendStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("8"))
+		charSet := characterSets[m.renderingLevel]
+		legendText := fmt.Sprintf("None  %s  %s  %s  %s  Complete", 
+			charSet.None, charSet.Low, charSet.Partial, charSet.Complete)
+		
+		// Calculate grid width: day labels (3 chars) + weeks * 3 chars per week (1 char + 2 spaces)
+		// But subtract the trailing 2 spaces from the last week
+		gridWidth := 3 + len(m.grid)*3 - 2
+		
+		// Create the actual legend text with character substitutions
+		actualLegendText := fmt.Sprintf("None  %s  %s  %s  %s  Complete", 
+			charSet.None, charSet.Low, charSet.Partial, charSet.Complete)
+		legendWidth := len(actualLegendText)
+		
+		// Create padding to align legend to the right edge of the grid
+		if gridWidth > legendWidth {
+			padding := strings.Repeat(" ", gridWidth-legendWidth)
+			s.WriteString(padding)
+		}
+		s.WriteString(legendStyle.Render(legendText))
+	}
+
 	// Footer with controls
 	s.WriteString("\n\n")
 	footerStyle := lipgloss.NewStyle().
@@ -335,9 +409,9 @@ func (m Model) View() string {
 	
 	var controls string
 	if m.viewMode == AllActivities {
-		controls = "Controls: [1-9] Select activity • [Tab] Single view • [q/ESC] Quit"
+		controls = "Controls: [1-9] Select activity • [Tab] Single view • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
 	} else {
-		controls = "Controls: [↑/↓] or [j/k] Navigate • [a] All activities • [Tab] Toggle • [q/ESC] Quit"
+		controls = "Controls: [↑/↓] or [j/k] Navigate • [a] All activities • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
 	}
 	s.WriteString(footerStyle.Render(controls))
 
@@ -381,14 +455,6 @@ func (m Model) renderActivityGrid(activity internal.Activity, activityKey string
 		}
 		s.WriteString("\n")
 	}
-
-	// Activity legend
-	s.WriteString("\n")
-	legendStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	charSet := characterSets[m.renderingLevel]
-	legendText := fmt.Sprintf("None  %s  %s  %s  %s  Complete", 
-		charSet.None, charSet.Low, charSet.Partial, charSet.Complete)
-	s.WriteString(legendStyle.Render(legendText))
 
 	return s.String()
 }
@@ -461,7 +527,15 @@ func getColorCode(colorName string) string {
 
 // RunTUI starts the interactive TUI
 func RunTUI() {
-	m := NewModel()
+	RunTUIWithTimeline(Timeline12Months)
+}
+
+func RunTUIWithTimeline(timeline TimelineDays) {
+	RunTUIWithOptions(timeline, true)
+}
+
+func RunTUIWithOptions(timeline TimelineDays, showLegend bool) {
+	m := NewModelWithOptions(timeline, showLegend)
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running TUI: %v\n", err)
