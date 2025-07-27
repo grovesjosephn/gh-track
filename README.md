@@ -1,111 +1,121 @@
-# hab - Habit Tracker
+# hab - Terminal Habit Tracker
 
-A fast, terminal-based habit tracker with GitHub-style contribution grids, built with Go and the Charm.sh TUI library suite.
+Track your daily habits with beautiful GitHub-style contribution grids, right in your terminal.
 
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white) ![Bubble Tea](https://img.shields.io/badge/Bubble%20Tea-FF69B4?style=flat) ![Terminal](https://img.shields.io/badge/terminal-ready-brightgreen)
 
-## Features
+## What is hab?
 
-- 🎯 **GitHub-style contribution grids** with circle character visualization (○ ◐ ◑ ●)
-- 🌈 **Color-coded habits** for easy differentiation  
-- 📊 **Multi-frequency habit support** with completion percentage tracking
-- 📅 **Flexible timeline visualization** (3, 6, or 12 months) going backwards from today
-- 📁 **Human-readable JSON format** for easy import/export
-- ⚡ **Fast compiled binary** with no runtime dependencies
-- 🔄 **Cross-platform terminal support** with automatic character fallbacks
-- 🎮 **Interactive navigation** between all habits and individual views
+hab transforms habit tracking into a visual, engaging experience using familiar GitHub-style contribution grids. See your progress at a glance, track multiple habits simultaneously, and stay motivated with beautiful terminal visualizations.
 
-## Installation
+### ✨ Key Features
+
+- 🎯 **GitHub-style contribution grids** - Familiar visual progress tracking
+- 🌈 **Color-coded habits** - Easy visual differentiation between different activities
+- 📊 **Multi-frequency support** - Track daily, twice-daily, or custom frequency habits
+- 📅 **Flexible timelines** - View 3, 6, or 12 months of history
+- ⚡ **Lightning fast** - Compiled Go binary with zero dependencies
+- 🎮 **Interactive TUI** - Modern, searchable interface with helpful shortcuts
+- 📱 **Cross-platform** - Works on macOS, Linux, and Windows
+- 📁 **Portable data** - Human-readable JSON format for easy backup/import
+
+## Quick Start
+
+### Installation
+
+Install hab with a single command:
 
 ```bash
-# Build the application
-make build
-
-# Or install to /usr/local/bin
-make install
-
-# Or run directly
-make run
+curl -fsSL https://raw.githubusercontent.com/grovesjosephn/hab/main/install.sh | bash
 ```
 
-## Usage
+*Requirements: Git, Go 1.21+, and Make*
 
-### Interactive TUI (Default)
+### Your First Habit
+
 ```bash
-# Launch interactive visualization (default: 12 months)
+# Create a new habit
+hab new exercise --color red
+
+# Log an activity
+hab exercise
+
+# View your progress
 hab
-
-# Launch with specific timeline
-hab -t 3m              # 3 months
-hab -t 6m              # 6 months  
-hab -t 12m             # 12 months (default)
-hab --no-legend        # Hide legend
-
-# Or explicitly
-hab -i
 ```
 
-**TUI Controls:**
-- `1-9` - Select specific habit by number  
-- `Tab` - Switch between all/single habit view
-- `↑/↓` or `j/k` - Navigate between habits (single view)
-- `Enter` or `Space` - Log activity for today (single view only)
+## Usage Guide
+
+### Interactive Interface
+
+Launch the beautiful terminal interface:
+
+```bash
+hab                    # Full 12-month view
+hab -t 3m              # 3-month view
+hab -t 6m              # 6-month view
+hab --no-legend        # Hide the legend
+```
+
+**Navigation:**
+- `Tab` - Open interactive habit selection
+- `1-9` - Quick select habits by number
+- `↑/↓` or `j/k` - Navigate between habits
+- `Enter/Space` - Select habit or log today's activity
 - `a` - Return to all habits view
-- `Ctrl+3/6/Y` - Switch timeline (3 months, 6 months, 12 months)
-- `L` - Toggle legend visibility
-- `q`, `ESC`, or `Ctrl+C` - Quit
+- `ESC` - Go back
+- `Ctrl+3/6/Y` - Switch timelines
+- `L` - Toggle legend
+- `?` - Show detailed help
+- `q` or `Ctrl+C` - Quit
 
-### Command Line Interface
+### Command Line Usage
 
-**Create habits:**
+**Creating Habits:**
 ```bash
-hab new exercise                    # Create new habit
-hab new exercise --color red        # With specific color
-hab new brushing --target 2         # Multi-frequency habit
+hab new exercise                    # Basic habit
+hab new exercise --color red        # With color
+hab new meditation --target 2       # Twice-daily habit
 ```
 
-**Track habits:**
+**Tracking Activities:**
 ```bash
-hab exercise                        # Add entry for today
-hab add exercise 2025-01-15        # Add entry for specific date
+hab exercise                        # Log for today
+hab add exercise 2025-01-15        # Log for specific date
 hab exercise --date 2025-01-15     # Alternative syntax
 ```
 
-**View and manage:**
+**Managing Your Data:**
 ```bash
-hab list                           # List all habits with stats
-hab stats exercise                 # Detailed statistics
-hab prune                          # Remove excess entries from all habits
-hab prune exercise                 # Remove excess entries from specific habit
-hab prune --dry-run                # Preview what would be pruned
-hab delete exercise                # Delete habit (with confirmation)
-hab delete exercise --force        # Delete without confirmation
+hab list                           # All habits with statistics
+hab stats exercise                 # Detailed stats for one habit
+hab prune                          # Clean up excess entries
+hab prune --dry-run                # Preview cleanup
+hab delete exercise                # Remove a habit
 ```
 
 ### Sample Output
 
-**Interactive TUI:**
+**Interactive Grid:**
 ```
 Activity Tracker - All Activities (12 months)
 
-[1] Brushing Teeth (139 activities)
-S  ●  ●  ◑  ●  ●  ●  ◑  
-M  ●  ●  ●  ●  ●  ●  ●  
-T  ●  ●  ●  ●  ●  ●  ●  
+[1] Exercise (49 activities)
+S  ●  ○  ●  ●  ○  ●  ◑  
+M  ●  ●  ●  ○  ●  ●  ●  
+T  ●  ●  ●  ●  ○  ●  ●  
 W  ●  ●  ●  ●  ●  ●  ●  
-T  ●  ●  ●  ●  ●  ●  ●  
+T  ●  ●  ●  ●  ●  ○  ●  
 F  ●  ●  ●  ●  ●  ●  ●  
-S  ●  ●  ●  ●  ●  ●  ●  
+S  ○  ●  ●  ●  ●  ●  ●  
 
-[2] Exercise (49 activities)
+[2] Reading (32 activities)
 ...
 
                              None  ○  ◐  ◑  ●  Complete
-
-Controls: [1-9] Select habit • [Tab] Single view • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit
 ```
 
-**CLI Commands:**
+**Command Line:**
 ```bash
 $ hab new exercise --color red
 ✓ Created habit 'Exercise' with color red
@@ -126,33 +136,60 @@ Your Habits:
     Target per day: 1
     Current streak: 1 days 🔥
     Add entry: hab exercise
-
-$ hab prune --dry-run
-Habit: Brushing Teeth (target: 2 per day)
-  2025-01-15: 4 entries → 2 entries (removing 2)
-  2025-01-16: 3 entries → 2 entries (removing 1)
-
-Dry run complete. Would prune 3 total entries.
 ```
 
-## Data Location
+## Understanding the Visualization
 
-By default, habits are stored in platform-appropriate locations:
+### Completion Levels
+
+hab automatically detects your terminal's capabilities and uses appropriate characters:
+
+**Unicode (Modern terminals):**
+- `○` No activity (0%)
+- `◐` Low completion (< 50%)
+- `◑` Partial completion (50-99%)
+- `●` Target met/exceeded (100%+)
+
+**ASCII-Extended (Most terminals):**
+- `░` `▒` `▓` `█` (none to complete)
+
+**Basic ASCII (All terminals):**
+- `.` `-` `+` `#` (none to complete)
+
+### Colors
+- `red`, `blue`, `green`, `magenta`, `cyan`, `yellow`
+- Each habit gets its own color for easy identification
+
+### Multi-Frequency Habits
+
+Track habits that occur multiple times per day:
+
+```bash
+hab new brushing --target 2        # Twice daily
+hab brushing                       # Log first time
+hab brushing                       # Log second time
+```
+
+The grid shows completion percentage based on your target.
+
+## Data & Customization
+
+### Data Location
+
+Your habits are stored in standard locations:
 
 - **macOS**: `~/Library/Application Support/hab/data/activities.json`
 - **Linux**: `~/.config/hab/data/activities.json`
 - **Windows**: `%APPDATA%/hab/data/activities.json`
-- **Fallback**: `./data/activities.json` (current directory)
 
-**Custom Location**: Set `HAB_DATA_FILE` environment variable to override:
+**Custom location:**
 ```bash
 export HAB_DATA_FILE="/path/to/my/habits.json"
-hab
 ```
 
-## Data Structure
+### Data Format
 
-Habits are stored in JSON format:
+Habits are stored in human-readable JSON:
 
 ```json
 {
@@ -160,94 +197,92 @@ Habits are stored in JSON format:
     "exercise": {
       "name": "Exercise",
       "color": "red",
+      "target_per_day": 1,
       "dates": ["2025-01-15", "2025-01-20", "2025-01-25"]
     },
-    "brushing_teeth": {
-      "name": "Brushing Teeth",
+    "meditation": {
+      "name": "Meditation",
       "color": "blue",
       "target_per_day": 2,
-      "dates": [
-        "2025-01-15", "2025-01-15",
-        "2025-01-16", 
-        "2025-01-17", "2025-01-17"
-      ]
+      "dates": ["2025-01-15", "2025-01-15", "2025-01-16"]
     }
   }
 }
 ```
 
-**Multi-completion Habits**: For habits that should be done multiple times per day (like brushing teeth twice daily), set `target_per_day` and repeat the date in the array for each completion.
+### Terminal Customization
 
-### Supported Colors
-- `red`, `blue`, `green`, `magenta`, `cyan`, `yellow`
-- Color field is optional (defaults to green)
-
-### Adding Your Own Data
-1. Create habits using `hab new [habit-name]` command
-2. Add entries using `hab [habit-name]` or `hab add [habit-name] [date]`
-3. Or manually edit the activities.json file in your data directory
-4. Run `hab` to see your updated grid
-
-## Character Visualization
-
-The application automatically detects your terminal's rendering capabilities and uses appropriate characters:
-
-### Unicode Mode (Modern terminals)
-- `○` - No activity (0% complete)
-- `◐` - Low completion (< 50% of target)
-- `◑` - Partial completion (50-99% of target) 
-- `●` - Target met or exceeded (100%+)
-
-### ASCII-Extended Mode (Most terminals)  
-- `░` - No activity (0% complete)
-- `▒` - Low completion (< 50% of target)
-- `▓` - Partial completion (50-99% of target)
-- `█` - Target met or exceeded (100%+)
-
-### ASCII Mode (Basic terminals)
-- `.` - No activity (0% complete)
-- `-` - Low completion (< 50% of target)
-- `+` - Partial completion (50-99% of target)
-- `#` - Target met or exceeded (100%+)
-
-Each activity type uses its specified color (red, blue, green, magenta, etc.)
-
-### Manual Override
-You can force a specific rendering mode:
+Force specific rendering modes:
 ```bash
-# Force Unicode characters
-HAB_RENDERING=unicode hab
-
-# Force ASCII-Extended characters  
-HAB_RENDERING=extended hab
-
-# Force basic ASCII characters
-HAB_RENDERING=ascii hab
+HAB_RENDERING=unicode hab          # Force Unicode
+HAB_RENDERING=extended hab         # Force ASCII-Extended  
+HAB_RENDERING=ascii hab            # Force basic ASCII
 ```
 
-### Debug Mode
-See which rendering mode was auto-detected:
+Debug mode to see detected capabilities:
 ```bash
 HAB_DEBUG=true hab
 ```
 
-## Use Cases
+## Common Workflows
 
-### Quick Status Check
+### Daily Check-in
 ```bash
+hab                                # See today's status
+hab exercise                       # Log workout
+hab reading                        # Log reading session
+```
+
+### Weekly Review
+```bash
+hab stats exercise                 # See detailed progress
+hab -t 3m                          # Check 3-month trends
+```
+
+### Data Management
+```bash
+hab prune --dry-run                # Check for cleanup opportunities
+hab list                           # Review all habits
+```
+
+### Automation
+```bash
+# Add to your .bashrc/.zshrc
+alias morning="hab reading && hab exercise && hab"
+
+# Script integration
+#!/bin/bash
+echo "=== Daily Habit Check ==="
 hab
 ```
 
-### Save to File
+---
+
+## Installation Details
+
+### Quick Install (Recommended)
+
 ```bash
-hab > habit-report.txt
+curl -fsSL https://raw.githubusercontent.com/grovesjosephn/hab/main/install.sh | bash
 ```
 
-### Integrate into Scripts
+Or with wget:
 ```bash
-#!/bin/bash
-echo "=== Daily Habit Report ==="
-cd ~/hab && hab
+wget -qO- https://raw.githubusercontent.com/grovesjosephn/hab/main/install.sh | bash
+```
+
+**Custom install directory:**
+```bash
+INSTALL_DIR="$HOME/.local/bin" curl -fsSL https://raw.githubusercontent.com/grovesjosephn/hab/main/install.sh | bash
+```
+
+### Manual Installation
+
+```bash
+git clone https://github.com/grovesjosephn/hab.git
+cd hab
+make build
+make install
 ```
 
 ## Development
@@ -261,55 +296,45 @@ cmd/                 # CLI commands (Cobra)
 ├── add.go           # Add habit entries
 ├── list.go          # List all habits
 ├── stats.go         # Habit statistics
-└── delete.go        # Delete habits
+├── delete.go        # Delete habits
+└── prune.go         # Clean up excess entries
 internal/            # Data management
 └── habit.go         # CRUD operations and data path logic
+ui/                  # Terminal UI
+└── tui.go           # Bubble Tea interface
 Makefile            # Build and install targets
 go.mod & go.sum     # Go module dependencies
-```
-
-### Commands
-```bash
-# Development
-go run main.go
-
-# Build for production  
-make build
-
-# Test all functionality
-make test
-
-# Clean build artifacts
-make clean
 ```
 
 ### Tech Stack
 - **Language**: Go 1.21+
 - **CLI Framework**: Cobra for command parsing
 - **TUI Framework**: Bubble Tea (Charm.sh)
+- **UI Components**: Bubbles (Charm.sh)
 - **Styling**: Lipgloss (Charm.sh)
 - **Data Format**: JSON with standard library parsing
 
-## Sample Data
-
-The application starts with no habits. Create your first habit with:
+### Development Commands
 ```bash
-hab new exercise --color red
+make build          # Build binary
+make run            # Run from source
+make test           # Run tests
+make clean          # Clean build artifacts
+make fmt            # Format code
+make vet            # Run go vet
 ```
 
-Then start tracking:
-```bash
-hab exercise  # Add entry for today
-```
-
-## Contributing
+### Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
-4. Commit: `git commit -m "Add feature"`
-5. Push: `git push origin feature-name`
-6. Open a Pull Request
+4. Run `make fmt && make vet && make test`
+5. Commit: `git commit -m "Add feature"`
+6. Push: `git push origin feature-name`
+7. Open a Pull Request
+
+---
 
 ## License
 
@@ -317,4 +342,4 @@ MIT License - feel free to use this project however you'd like!
 
 ## Inspiration
 
-Inspired by GitHub's contribution graph, this project brings that familiar visualization to the terminal for tracking daily habits, with multi-frequency support and blazing fast Go performance.
+Inspired by GitHub's contribution graph, hab brings that familiar visualization to the terminal for tracking daily habits, with multi-frequency support and blazing fast Go performance.

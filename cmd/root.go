@@ -12,7 +12,14 @@ var (
 	interactiveMode bool
 	timelineFlag    string
 	hideLegend      bool
+	version         = "dev"
 )
+
+// SetVersion sets the version for the application
+func SetVersion(v string) {
+	version = v
+	rootCmd.Version = v
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

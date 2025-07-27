@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -58,7 +61,28 @@ type ViewMode int
 const (
 	AllActivities ViewMode = iota
 	SingleActivity
+	HabitSelection
 )
+
+// HabitItem represents an item in the habit list
+type HabitItem struct {
+	key      string
+	activity internal.Activity
+}
+
+func (i HabitItem) FilterValue() string { return i.activity.Name }
+func (i HabitItem) Title() string       { return i.activity.Name }
+func (i HabitItem) Description() string {
+	return fmt.Sprintf("Key: %s • Color: %s • Target: %d/day • Entries: %d", 
+		i.key, i.activity.Color, max(1, i.activity.TargetPerDay), len(i.activity.Dates))
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 // ContributionGrid represents a grid cell for a specific date
 type ContributionGrid struct {
@@ -66,6 +90,93 @@ type ContributionGrid struct {
 	Level  int
 	Color  string
 	Active bool
+}
+
+// Key bindings
+type keyMap struct {
+	Up          key.Binding
+	Down        key.Binding
+	Left        key.Binding
+	Right       key.Binding
+	Enter       key.Binding
+	Space       key.Binding
+	Tab         key.Binding
+	Quit        key.Binding
+	Escape      key.Binding
+	AllView     key.Binding
+	Timeline3m  key.Binding
+	Timeline6m  key.Binding
+	Timeline12m key.Binding
+	ToggleLegend key.Binding
+	Help        key.Binding
+}
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Enter, k.Tab, k.Help, k.Quit}
+}
+
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Enter, k.Space},
+		{k.Tab, k.AllView, k.ToggleLegend},
+		{k.Timeline3m, k.Timeline6m, k.Timeline12m},
+		{k.Help, k.Quit, k.Escape},
+	}
+}
+
+var keys = keyMap{
+	Up: key.NewBinding(
+		key.WithKeys("up", "k"),
+		key.WithHelp("↑/k", "move up"),
+	),
+	Down: key.NewBinding(
+		key.WithKeys("down", "j"),
+		key.WithHelp("↓/j", "move down"),
+	),
+	Enter: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "select/log activity"),
+	),
+	Space: key.NewBinding(
+		key.WithKeys(" "),
+		key.WithHelp("space", "log activity"),
+	),
+	Tab: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("tab", "switch view"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q", "quit"),
+	),
+	Escape: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "back"),
+	),
+	AllView: key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "all activities"),
+	),
+	Timeline3m: key.NewBinding(
+		key.WithKeys("ctrl+3"),
+		key.WithHelp("ctrl+3", "3 months"),
+	),
+	Timeline6m: key.NewBinding(
+		key.WithKeys("ctrl+6"),
+		key.WithHelp("ctrl+6", "6 months"),
+	),
+	Timeline12m: key.NewBinding(
+		key.WithKeys("ctrl+y"),
+		key.WithHelp("ctrl+y", "12 months"),
+	),
+	ToggleLegend: key.NewBinding(
+		key.WithKeys("l"),
+		key.WithHelp("l", "toggle legend"),
+	),
+	Help: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "toggle help"),
+	),
 }
 
 // Model represents the Bubble Tea model
@@ -82,6 +193,10 @@ type Model struct {
 	selectedIndex  int
 	timeline       TimelineDays
 	showLegend     bool
+	habitList      list.Model
+	help           help.Model
+	keys           keyMap
+	showHelp       bool
 }
 
 // NewModel creates a new TUI model with default timeline
@@ -112,6 +227,27 @@ func NewModelWithOptions(timeline TimelineDays, showLegend bool) *Model {
 		activityKeys = append(activityKeys, key)
 	}
 	sort.Strings(activityKeys)
+
+	// Create list items for bubbles/list
+	items := make([]list.Item, 0, len(activityKeys))
+	for _, key := range activityKeys {
+		items = append(items, HabitItem{
+			key:      key,
+			activity: activities[key],
+		})
+	}
+
+	// Configure the list
+	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	l.Title = "Select a Habit"
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(true)
+	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
+
+	// Configure help
+	h := help.New()
+	h.Styles.ShortKey = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	h.Styles.ShortDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
 	
 	return &Model{
 		habitManager:   hm,
@@ -124,6 +260,10 @@ func NewModelWithOptions(timeline TimelineDays, showLegend bool) *Model {
 		selectedIndex:  0,
 		timeline:       timeline,
 		showLegend:     showLegend,
+		habitList:      l,
+		help:           h,
+		keys:           keys,
+		showHelp:       false,
 	}
 }
 
@@ -250,76 +390,152 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		// Handle help toggle first
+		if key.Matches(msg, m.keys.Help) {
+			m.showHelp = !m.showHelp
+			return m, nil
+		}
+
+		// Handle quit
+		if key.Matches(msg, m.keys.Quit) {
 			return m, tea.Quit
-		case "a":
-			// Show all activities
-			m.viewMode = AllActivities
-		case "tab":
-			// Toggle between view modes
-			if m.viewMode == AllActivities {
-				m.viewMode = SingleActivity
-			} else {
+		}
+
+		// Handle view-specific keys
+		switch m.viewMode {
+		case HabitSelection:
+			// Update list
+			m.habitList, cmd = m.habitList.Update(msg)
+			
+			// Handle selection
+			if key.Matches(msg, m.keys.Enter) {
+				if selectedItem, ok := m.habitList.SelectedItem().(HabitItem); ok {
+					// Find the index of the selected habit
+					for i, key := range m.activityKeys {
+						if key == selectedItem.key {
+							m.selectedIndex = i
+							break
+						}
+					}
+					m.viewMode = SingleActivity
+				}
+			}
+			
+			// Handle escape to go back
+			if key.Matches(msg, m.keys.Escape) {
 				m.viewMode = AllActivities
 			}
-		case "up", "k":
-			// Navigate up in single activity mode
-			if m.viewMode == SingleActivity && len(m.activityKeys) > 0 {
+
+		case AllActivities:
+			// Handle tab to go to habit selection
+			if key.Matches(msg, m.keys.Tab) {
+				m.viewMode = HabitSelection
+			}
+			
+			// Handle number keys for direct selection
+			switch msg.String() {
+			case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+				num := int(msg.String()[0] - '1')
+				if num >= 0 && num < len(m.activityKeys) {
+					m.selectedIndex = num
+					m.viewMode = SingleActivity
+				}
+			}
+
+		case SingleActivity:
+			// Handle navigation
+			if key.Matches(msg, m.keys.Up) && len(m.activityKeys) > 0 {
 				m.selectedIndex = (m.selectedIndex - 1 + len(m.activityKeys)) % len(m.activityKeys)
 			}
-		case "down", "j":
-			// Navigate down in single activity mode
-			if m.viewMode == SingleActivity && len(m.activityKeys) > 0 {
+			if key.Matches(msg, m.keys.Down) && len(m.activityKeys) > 0 {
 				m.selectedIndex = (m.selectedIndex + 1) % len(m.activityKeys)
 			}
-		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-			// Select activity by number
-			num := int(msg.String()[0] - '1') // Convert '1' to 0, '2' to 1, etc.
-			if num >= 0 && num < len(m.activityKeys) {
-				m.selectedIndex = num
-				m.viewMode = SingleActivity
+			
+			// Handle tab to go to habit selection  
+			if key.Matches(msg, m.keys.Tab) {
+				m.viewMode = HabitSelection
 			}
-		case "ctrl+3", "alt+3":
-			// Switch to 3 month timeline
-			m.timeline = Timeline3Months
-			m.grid = generateGrid(m.activities, m.timeline)
-		case "ctrl+6", "alt+6":
-			// Switch to 6 month timeline
-			m.timeline = Timeline6Months
-			m.grid = generateGrid(m.activities, m.timeline)
-		case "ctrl+y", "alt+y":
-			// Switch to 12 month (year) timeline
-			m.timeline = Timeline12Months
-			m.grid = generateGrid(m.activities, m.timeline)
-		case "l":
-			// Toggle legend visibility
-			m.showLegend = !m.showLegend
-		case "enter", " ":
-			// Log activity for current habit (only in single activity mode)
-			if m.viewMode == SingleActivity && len(m.activityKeys) > 0 {
+			
+			// Handle all activities view
+			if key.Matches(msg, m.keys.AllView) {
+				m.viewMode = AllActivities
+			}
+			
+			// Handle logging activity
+			if (key.Matches(msg, m.keys.Enter) || key.Matches(msg, m.keys.Space)) && len(m.activityKeys) > 0 {
 				selectedKey := m.activityKeys[m.selectedIndex]
 				today := time.Now().Format("2006-01-02")
 				if err := m.habitManager.AddEntry(selectedKey, today); err == nil {
 					// Reload activities and regenerate grid
 					m.activities = m.habitManager.GetActivities()
 					m.grid = generateGrid(m.activities, m.timeline)
+					// Update list items
+					m.updateListItems()
 				}
 			}
 		}
+
+		// Global keybindings (work in all views)
+		if key.Matches(msg, m.keys.Timeline3m) {
+			m.timeline = Timeline3Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		}
+		if key.Matches(msg, m.keys.Timeline6m) {
+			m.timeline = Timeline6Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		}
+		if key.Matches(msg, m.keys.Timeline12m) {
+			m.timeline = Timeline12Months
+			m.grid = generateGrid(m.activities, m.timeline)
+		}
+		if key.Matches(msg, m.keys.ToggleLegend) {
+			m.showLegend = !m.showLegend
+		}
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.habitList.SetWidth(msg.Width)
+		m.habitList.SetHeight(msg.Height - 4) // Leave space for help
 		return m, nil
 	}
-	return m, nil
+	return m, cmd
+}
+
+// updateListItems refreshes the list items with current activity data
+func (m *Model) updateListItems() {
+	items := make([]list.Item, 0, len(m.activityKeys))
+	for _, key := range m.activityKeys {
+		items = append(items, HabitItem{
+			key:      key,
+			activity: m.activities[key],
+		})
+	}
+	m.habitList.SetItems(items)
 }
 
 func (m Model) View() string {
 	if !m.ready {
 		return "Loading..."
+	}
+
+	// Handle habit selection view
+	if m.viewMode == HabitSelection {
+		var s strings.Builder
+		s.WriteString(m.habitList.View())
+		
+		// Add help at bottom
+		s.WriteString("\n")
+		if m.showHelp {
+			s.WriteString(m.help.View(m.keys))
+		} else {
+			s.WriteString(m.help.ShortHelpView([]key.Binding{m.keys.Enter, m.keys.Escape, m.keys.Help, m.keys.Quit}))
+		}
+		return s.String()
 	}
 
 	var s strings.Builder
@@ -345,8 +561,12 @@ func (m Model) View() string {
 	if m.viewMode == AllActivities {
 		titleText = fmt.Sprintf("Activity Tracker - All Activities (%s)", timelineText)
 	} else {
-		selectedActivity := m.activities[m.activityKeys[m.selectedIndex]]
-		titleText = fmt.Sprintf("Activity Tracker - %s (%s)", selectedActivity.Name, timelineText)
+		if len(m.activityKeys) > 0 {
+			selectedActivity := m.activities[m.activityKeys[m.selectedIndex]]
+			titleText = fmt.Sprintf("Activity Tracker - %s (%s)", selectedActivity.Name, timelineText)
+		} else {
+			titleText = fmt.Sprintf("Activity Tracker (%s)", timelineText)
+		}
 	}
 	s.WriteString(titleStyle.Render(titleText))
 	
@@ -378,7 +598,7 @@ func (m Model) View() string {
 				s.WriteString("\n\n")
 			}
 		}
-	} else {
+	} else if m.viewMode == SingleActivity {
 		// Show single selected activity
 		if len(m.activityKeys) > 0 {
 			key := m.activityKeys[m.selectedIndex]
@@ -388,7 +608,7 @@ func (m Model) View() string {
 	}
 
 	// Legend (right-aligned to grid end) - only show if enabled
-	if m.showLegend {
+	if m.showLegend && m.viewMode != HabitSelection {
 		s.WriteString("\n\n")
 		legendStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("8"))
@@ -413,18 +633,20 @@ func (m Model) View() string {
 		s.WriteString(legendStyle.Render(legendText))
 	}
 
-	// Footer with controls
+	// Footer with help/controls
 	s.WriteString("\n\n")
-	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("8"))
-	
-	var controls string
-	if m.viewMode == AllActivities {
-		controls = "Controls: [1-9] Select activity • [Tab] Single view • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
+	if m.showHelp {
+		s.WriteString(m.help.View(m.keys))
 	} else {
-		controls = "Controls: [↑/↓] or [j/k] Navigate • [Enter/Space] Log today • [a] All activities • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
+		// Show appropriate short help based on view mode
+		var helpKeys []key.Binding
+		if m.viewMode == AllActivities {
+			helpKeys = []key.Binding{m.keys.Tab, m.keys.Timeline3m, m.keys.ToggleLegend, m.keys.Help, m.keys.Quit}
+		} else {
+			helpKeys = []key.Binding{m.keys.Up, m.keys.Enter, m.keys.AllView, m.keys.Tab, m.keys.Help, m.keys.Quit}
+		}
+		s.WriteString(m.help.ShortHelpView(helpKeys))
 	}
-	s.WriteString(footerStyle.Render(controls))
 
 	return s.String()
 }
