@@ -49,6 +49,7 @@ hab -i
 - `1-9` - Select specific habit by number  
 - `Tab` - Switch between all/single habit view
 - `↑/↓` or `j/k` - Navigate between habits (single view)
+- `Enter` or `Space` - Log activity for today (single view only)
 - `a` - Return to all habits view
 - `Ctrl+3/6/Y` - Switch timeline (3 months, 6 months, 12 months)
 - `L` - Toggle legend visibility
@@ -74,6 +75,9 @@ hab exercise --date 2025-01-15     # Alternative syntax
 ```bash
 hab list                           # List all habits with stats
 hab stats exercise                 # Detailed statistics
+hab prune                          # Remove excess entries from all habits
+hab prune exercise                 # Remove excess entries from specific habit
+hab prune --dry-run                # Preview what would be pruned
 hab delete exercise                # Delete habit (with confirmation)
 hab delete exercise --force        # Delete without confirmation
 ```
@@ -122,6 +126,13 @@ Your Habits:
     Target per day: 1
     Current streak: 1 days 🔥
     Add entry: hab exercise
+
+$ hab prune --dry-run
+Habit: Brushing Teeth (target: 2 per day)
+  2025-01-15: 4 entries → 2 entries (removing 2)
+  2025-01-16: 3 entries → 2 entries (removing 1)
+
+Dry run complete. Would prune 3 total entries.
 ```
 
 ## Data Location

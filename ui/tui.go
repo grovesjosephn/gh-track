@@ -297,6 +297,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "l":
 			// Toggle legend visibility
 			m.showLegend = !m.showLegend
+		case "enter", " ":
+			// Log activity for current habit (only in single activity mode)
+			if m.viewMode == SingleActivity && len(m.activityKeys) > 0 {
+				selectedKey := m.activityKeys[m.selectedIndex]
+				today := time.Now().Format("2006-01-02")
+				if err := m.habitManager.AddEntry(selectedKey, today); err == nil {
+					// Reload activities and regenerate grid
+					m.activities = m.habitManager.GetActivities()
+					m.grid = generateGrid(m.activities, m.timeline)
+				}
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -411,7 +422,7 @@ func (m Model) View() string {
 	if m.viewMode == AllActivities {
 		controls = "Controls: [1-9] Select activity • [Tab] Single view • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
 	} else {
-		controls = "Controls: [↑/↓] or [j/k] Navigate • [a] All activities • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
+		controls = "Controls: [↑/↓] or [j/k] Navigate • [Enter/Space] Log today • [a] All activities • [Ctrl+3/6/Y] Timeline • [L] Legend • [q/ESC] Quit"
 	}
 	s.WriteString(footerStyle.Render(controls))
 
